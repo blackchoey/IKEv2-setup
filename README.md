@@ -17,6 +17,7 @@
 ## What?
 
 A Bash script that takes Ubuntu Server 17.10 (and probably also 17.04 or 16.10, but these are no longer tested) from clean install to production-ready IKEv2 VPN with strongSwan. Comments and pull requests welcome.
+This is a modified version which removes unnecessary configuration from my perspective. Special thanks to jawj's work.
 
 ### VPN server
 
