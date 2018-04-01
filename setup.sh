@@ -45,8 +45,8 @@ echo
 echo "--- Configuration: general server settings ---"
 echo
 
-read -p "Timezone (default: Europe/London): " TZONE
-TZONE=${TZONE:-'Europe/London'}
+read -p "Timezone (default: Asia/Shanghai): " TZONE
+TZONE=${TZONE:-'Asia/Shanghai'}
 
 read -p "Email address for sysadmin (e.g. j.bloggs@example.com): " EMAIL
 
@@ -237,7 +237,6 @@ echo "--- Timezone, mail, unattended upgrades ---"
 echo
 
 timedatectl set-timezone $TZONE
-/usr/sbin/update-locale LANG=en_GB.UTF-8
 
 
 sed -r \
@@ -248,7 +247,6 @@ sed -r \
 grep -Fq 'jawj/IKEv2-setup' /etc/aliases || echo "
 # https://github.com/jawj/IKEv2-setup
 root: ${EMAIL}
-${LOGINUSERNAME}: ${EMAIL}
 " >> /etc/aliases
 
 newaliases
