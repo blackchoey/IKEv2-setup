@@ -131,12 +131,6 @@ iptables -t mangle -A FORWARD --match policy --pol ipsec --dir in -s $VPNIPPOOL 
 iptables -t nat -A POSTROUTING -s $VPNIPPOOL -o $ETH0ORSIMILAR -m policy --pol ipsec --dir out -j ACCEPT  # exempt IPsec traffic from masquerading
 iptables -t nat -A POSTROUTING -s $VPNIPPOOL -o $ETH0ORSIMILAR -j MASQUERADE
 
-
-# fall through to drop any other input and forward traffic
-
-iptables -A INPUT   -j DROP
-iptables -A FORWARD -j DROP
-
 iptables -L
 
 debconf-set-selections <<< "iptables-persistent iptables-persistent/autosave_v4 boolean true"
