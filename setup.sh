@@ -108,12 +108,6 @@ iptables -A INPUT -i lo -j ACCEPT
 # drop invalid packets
 iptables -A INPUT -m state --state INVALID -j DROP
 
-# rate-limit repeated new requests from same IP to any ports
-iptables -I INPUT -i $ETH0ORSIMILAR -m state --state NEW -m recent --set
-iptables -I INPUT -i $ETH0ORSIMILAR -m state --state NEW -m recent --update --seconds 60 --hitcount 12 -j DROP
-
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-
 # VPN
 
 # accept IPSec/NAT-T for VPN (ESP not needed with forceencaps, as ESP goes inside UDP)
@@ -268,7 +262,7 @@ echo
 echo "--- Creating configuration files ---"
 echo
 
-cd /home/${LOGINUSERNAME}
+cd /home/
 
 cat << EOF > vpn-ios-or-mac.mobileconfig
 <?xml version='1.0' encoding='UTF-8'?>
