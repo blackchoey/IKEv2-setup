@@ -1,7 +1,6 @@
 #!/bin/bash -e
 
-# == Update to 17.10 if required:
-# nano /etc/update-manager/release-upgrades -> Prompt=normal
+# == Update to 18.04 if required:
 # apt-get update
 # do-release-upgrade
 
@@ -19,7 +18,7 @@ function exit_badly {
   exit 1
 }
 
-[[ $(lsb_release -rs) == "17.10" ]] || exit_badly "This script is for Ubuntu 17.10 only, aborting (if you know what you are doing, delete this check)."
+[[ $(lsb_release -rs) == "18.04" ]] || exit_badly "This script is for Ubuntu 18.04 only, aborting (if you know what you're doing, delete this check)."
 [[ $(id -u) -eq 0 ]] || exit_badly "Please re-run as root (e.g. sudo ./path/to/this/script)"
 
 echo "--- Configuration: VPN settings ---"
@@ -48,7 +47,7 @@ echo
 read -p "Timezone (default: Asia/Shanghai): " TZONE
 TZONE=${TZONE:-'Asia/Shanghai'}
 
-read -p "Email address for sysadmin (e.g. j.bloggs@example.com): " EMAIL
+read -p "Email address for sysadmin (e.g. j.bloggs@example.com): " EMAILADDR
 
 
 VPNIPPOOL="10.10.10.0/24"
@@ -64,7 +63,7 @@ apt-get -o Acquire::ForceIPv4=true update && apt-get upgrade -y
 debconf-set-selections <<< "postfix postfix/mailname string ${VPNHOST}"
 debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
 
-apt-get install -y language-pack-en strongswan strongswan-ikev2 libstrongswan-standard-plugins strongswan-libcharon libcharon-standard-plugins libcharon-extra-plugins moreutils iptables-persistent postfix mailutils unattended-upgrades certbot
+apt-get install -y language-pack-en strongswan libstrongswan-standard-plugins strongswan-libcharon libcharon-standard-plugins libcharon-extra-plugins moreutils iptables-persistent postfix mutt unattended-upgrades certbot
 
 
 ETH0ORSIMILAR=$(ip route get 8.8.8.8 | awk -- '{printf $5}')
@@ -144,7 +143,7 @@ post-hook = /sbin/iptables -D INPUT -p tcp --dport 80 -j ACCEPT
 renew-hook = /usr/sbin/ipsec reload && /usr/sbin/ipsec secrets
 ' > /etc/letsencrypt/cli.ini
 
-certbot certonly --non-interactive --agree-tos --standalone --preferred-challenges http --email $EMAIL -d $VPNHOST
+certbot certonly --non-interactive --agree-tos --standalone --preferred-challenges http --email $EMAILADDR -d $VPNHOST
 
 ln -f -s /etc/letsencrypt/live/$VPNHOST/cert.pem    /etc/ipsec.d/certs/cert.pem
 ln -f -s /etc/letsencrypt/live/$VPNHOST/privkey.pem /etc/ipsec.d/private/privkey.pem
@@ -196,7 +195,7 @@ conn roadwarrior
   fragmentation=yes
   forceencaps=yes
   ike=aes256gcm16-sha256-ecp521,aes256-sha256-ecp384!
-  esp=aes256gcm16-sha256!
+  esp=aes256gcm16-sha256,aes256gcm16-ecp384!
   dpdaction=clear
   dpddelay=180s
   rekey=no
@@ -215,7 +214,7 @@ conn roadwarrior
 " > /etc/ipsec.conf
 
 echo "${VPNHOST} : RSA \"privkey.pem\"
-${VPNUSERNAME} %any : EAP \""${VPNPASSWORD}"\"
+${VPNUSERNAME} : EAP \""${VPNPASSWORD}"\"
 " > /etc/ipsec.secrets
 
 ipsec restart
@@ -235,7 +234,7 @@ sed -r \
 
 grep -Fq 'jawj/IKEv2-setup' /etc/aliases || echo "
 # https://github.com/jawj/IKEv2-setup
-root: ${EMAIL}
+root: ${EMAILADDR}
 " >> /etc/aliases
 
 newaliases
@@ -415,7 +414,7 @@ conn ikev2vpn
 
 grep -Fq 'jawj/IKEv2-setup' /etc/ipsec.secrets || echo "
 # https://github.com/jawj/IKEv2-setup
-\${VPNUSERNAME} %any : EAP \"\${VPNPASSWORD}\"
+\${VPNUSERNAME} : EAP \"\${VPNPASSWORD}\"
 " >> /etc/ipsec.secrets
 
 ipsec restart
@@ -440,7 +439,7 @@ EOF
 cat << EOF > vpn-instructions.txt
 == iOS and macOS ==
 
-A configuration profile is attached as vpn-ios-or-mac.mobileconfig â€” simply open this to install. You will be asked for your device PIN or password, and your VPN username and password, not necessarily in that order.
+A configuration profile is attached as vpn-ios-or-mac.mobileconfig â€simply open this to install. You will be asked for your device PIN or password, and your VPN username and password, not necessarily in that order.
 
 
 == Windows ==
@@ -451,7 +450,8 @@ Add-VpnConnection -Name "${VPNHOST}" \`
   -ServerAddress "${VPNHOST}" \`
   -TunnelType IKEv2 \`
   -EncryptionLevel Maximum \`
-  -AuthenticationMethod EAP
+  -AuthenticationMethod EAP \`
+  -RememberCredential
 
 Set-VpnConnectionIPsecConfiguration -ConnectionName "${VPNHOST}" \`
   -AuthenticationTransformConstants GCMAES256 \`
@@ -479,7 +479,7 @@ A bash script to set up strongSwan as a VPN client is attached as vpn-ubuntu-cli
 
 EOF
 
-cat vpn-instructions.txt | mail -r $USER@$VPNHOST -s "VPN configuration" -A vpn-ios-or-mac.mobileconfig -A vpn-ubuntu-client.sh $EMAIL
+cat vpn-instructions.txt | EMAIL=$USER@$VPNHOST mutt -s "VPN configuration" -a vpn-ios-or-mac.mobileconfig vpn-ubuntu-client.sh -- $EMAILADDR
 
 echo
 echo "--- How to connect ---"
